@@ -290,6 +290,16 @@ h1, h2, h3, h4, h5, h6, figure {
 				}
 			}
 		}
+		.arrow-down {
+			position: absolute;
+			bottom: 0px;
+			width: 100%;
+			text-align: center;
+			font-size: 2em;
+			a {
+				color: whitesmoke;
+			}
+		}
 	}
 }
 
