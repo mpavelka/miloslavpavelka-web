@@ -134,6 +134,19 @@
 		$(".fh5co-loader").fadeOut("slow");
 	};
 
+	var goToContent = function() {
+
+		$('.js-gotocontent').on('click', function(event){
+			event.preventDefault();
+
+			$('html, body').animate({
+				scrollTop: $('#fh5co-features').offset().top
+			}, 800, 'easeInOutExpo');
+			
+			return false;
+		});	
+	};
+
 	
 	$(function(){
 		contentWayPoint();
@@ -143,6 +156,7 @@
 		parallax();
 		// pieChart();
 		skillsWayPoint();
+		goToContent();
 	});
 
 

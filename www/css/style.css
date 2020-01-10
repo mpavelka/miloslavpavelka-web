@@ -240,6 +240,20 @@ h1, h2, h3, h4, h5, h6, figure {
   font-size: 30px;
 }
 
+#fh5co-header .display-tc .arrow-down,
+.fh5co-cover .display-tc .arrow-down {
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
+  text-align: center;
+  font-size: 2em;
+}
+
+#fh5co-header .display-tc .arrow-down a,
+.fh5co-cover .display-tc .arrow-down a {
+  color: whitesmoke;
+}
+
 #fh5co-features .services-padding {
   padding: 7em 0;
 }
