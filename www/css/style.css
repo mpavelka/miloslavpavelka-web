@@ -240,14 +240,6 @@ h1, h2, h3, h4, h5, h6, figure {
   font-size: 30px;
 }
 
-#fh5co-features {
-  background: #22646B;
-}
-
-#fh5co-features h2 {
-  color: #fff;
-}
-
 #fh5co-features .services-padding {
   padding: 7em 0;
 }
@@ -269,7 +261,7 @@ h1, h2, h3, h4, h5, h6, figure {
   width: 100px;
   height: 100px;
   margin: 0 auto;
-  background: #fff;
+  background: #22646B;
   margin-bottom: 20px;
   -webkit-border-radius: 50%;
   -moz-border-radius: 50%;
@@ -282,7 +274,7 @@ h1, h2, h3, h4, h5, h6, figure {
   display: table-cell;
   vertical-align: middle;
   height: 100px;
-  color: #22646B !important;
+  color: #fff;
 }
 
 #fh5co-features .feature-left .feature-copy {
@@ -292,12 +284,10 @@ h1, h2, h3, h4, h5, h6, figure {
 #fh5co-features .feature-left h3 {
   font-size: 24px;
   font-weight: 400;
-  color: #fff;
 }
 
 #fh5co-features .feature-left p {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.7);
 }
 
 #fh5co-features .feature-left p:last-child {
