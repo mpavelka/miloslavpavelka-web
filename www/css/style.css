@@ -297,7 +297,12 @@ h1, h2, h3, h4, h5, h6, figure {
 #fh5co-features .feature-left h3 {
   font-size: 24px;
   font-weight: 400;
-  height: 2em;
+}
+
+@media screen and (max-width: 992px) {
+  #fh5co-features .feature-left h3 {
+    font-size: 2em;
+  }
 }
 
 #fh5co-features .feature-left p {
