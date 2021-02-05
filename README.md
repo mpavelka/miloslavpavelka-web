@@ -20,3 +20,8 @@ Mac:
 Mac:
 
 	$ sassc --style expanded -m ./sass/style.scss ./www/css/style.css
+
+## Deploy
+
+	git subtree push --prefix www origin gh-pages
+
