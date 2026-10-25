@@ -4,11 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Self-contained: only inline code runs, nothing is fetched or sent anywhere. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="author" content="Miloslav Pavelka">
 <meta name="description" content="Learn to tell the time: read analog clocks, set them by dragging the hands, and flip digital numbers like an old flip clock.">
-<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+<link rel="icon" type="image/svg+xml" href="/clock-trainer/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/clock-trainer/favicon-32.png">
+<link rel="apple-touch-icon" href="/clock-trainer/apple-touch-icon.png">
+<link rel="manifest" href="/clock-trainer/manifest.webmanifest">
+<meta name="theme-color" content="#2a6fdb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Clock Trainer">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Clock Trainer</title>
 <style>
   :root {
@@ -23,6 +31,7 @@
     color: var(--ink);
     background: linear-gradient(180deg, #e6eeff 0%, #f8fbff 60%);
     min-height: 100vh;
+    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
   }
