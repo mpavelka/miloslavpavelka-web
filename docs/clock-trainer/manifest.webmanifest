@@ -1,0 +1,17 @@
+{
+  "name": "Clock Trainer",
+  "short_name": "Clock Trainer",
+  "description": "Learn to tell the time: read analog clocks, set them by dragging the hands, and flip digital numbers.",
+  "id": "/clock-trainer/",
+  "start_url": "/clock-trainer/",
+  "scope": "/clock-trainer/",
+  "display": "standalone",
+  "background_color": "#e6eeff",
+  "theme_color": "#2a6fdb",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
