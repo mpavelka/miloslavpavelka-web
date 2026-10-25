@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Self-contained: only inline code runs, nothing is fetched or sent anywhere. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="author" content="Miloslav Pavelka">
+<meta name="description" content="Learn to tell the time: read analog clocks, set them by dragging the hands, and flip digital numbers like an old flip clock.">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+<title>Clock Trainer</title>
+<style>
+  :root {
+    --ink: #1f2937; --muted: #64708a; --card: #fff;
+    --hour: #e4572e; --minute: #2a6fdb; --ok: #1f9d55; --bad: #d64545;
+    --flip: #2b2f3a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: linear-gradient(180deg, #e6eeff 0%, #f8fbff 60%);
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  [hidden] { display: none !important; }
+
+  header { max-width: 1100px; margin: 0 auto; padding: 14px 20px 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; }
+  h1 { font-size: 1.7rem; margin: 0; }
+  .tabs { display: flex; gap: 4px; background: #d6e1fa; padding: 5px; border-radius: 999px; }
+  .tab { font: inherit; font-weight: 800; border: 0; background: transparent; color: #3b4a6b; padding: 10px 22px; border-radius: 999px; cursor: pointer; touch-action: manipulation; min-height: 44px; }
+  .tab[aria-selected="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 5px rgba(20, 40, 90, .2); }
+  main { max-width: 1100px; margin: 0 auto; padding: 8px 20px 36px; }
+
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 14px; color: var(--muted); font-weight: 700; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button { font: inherit; font-weight: 800; font-size: .95rem; border: 2px solid #c5d3f3; background: #fff; color: #3b4a6b; padding: 8px 14px; border-radius: 999px; cursor: pointer; touch-action: manipulation; min-height: 40px; }
+  .seg button[aria-pressed="true"] { background: var(--minute); border-color: var(--minute); color: #fff; }
+
+  .rooms { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 640px) { .rooms { grid-template-columns: 1fr; } }
+  .panel { background: var(--card); border-radius: 26px; padding: 18px 14px 20px; box-shadow: 0 10px 30px rgba(40, 70, 140, .13); border: 4px solid transparent; display: flex; flex-direction: column; align-items: center; gap: 12px; transition: border-color .2s; }
+  .panel.ok { border-color: var(--ok); }
+  .panel.bad { border-color: var(--bad); animation: shake .4s; }
+  @keyframes shake { 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+  .panel h2 { margin: 0; font-size: 1.3rem; }
+  .panel .sub { margin: -6px 0 0; color: var(--muted); font-size: .95rem; text-align: center; }
+  .score { align-self: flex-end; margin: -6px 6px 0 0; font-weight: 800; color: var(--muted); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .btn { font: inherit; font-weight: 800; font-size: 1.1rem; border: 0; border-radius: 999px; padding: 12px 30px; min-height: 50px; cursor: pointer; touch-action: manipulation; }
+  .btn.primary { background: var(--minute); color: #fff; box-shadow: 0 4px 0 #1b4fa3; }
+  .btn.primary:active { transform: translateY(3px); box-shadow: 0 1px 0 #1b4fa3; }
+  .btn.ghost { background: #e6edfc; color: #33415c; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .msg { margin: 0; min-height: 1.5em; font-weight: 800; text-align: center; }
+  .msg.ok { color: var(--ok); }
+  .msg.bad { color: var(--bad); }
+
+  /* ----- analog clock ----- */
+  .clock-host { width: 100%; display: flex; justify-content: center; }
+  .clock { width: min(100%, 400px); aspect-ratio: 1; display: block; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; filter: drop-shadow(0 8px 12px rgba(30, 50, 100, .22)); }
+  .clock .rim { fill: none; stroke: #33415c; stroke-width: 9; }
+  .clock .tick { stroke: #33415c; stroke-linecap: round; }
+  .clock .num { font-size: 38px; font-weight: 800; fill: #2a3550; text-anchor: middle; }
+  .clock .mnum { display: none; font-size: 17px; font-weight: 800; fill: #6b7a99; text-anchor: middle; }
+  .clock.show-min .mnum { display: inline; }
+  .clock .ampm { pointer-events: none; paint-order: stroke; stroke: rgba(255,255,255,.85); stroke-width: 6; stroke-linejoin: round; }
+  .clock .ampm text { font-size: 26px; font-weight: 800; fill: #52618a; }
+  .clock .hand path { stroke: #fff; stroke-width: 1.5; stroke-linejoin: round; }
+  .clock .hand.hour path, .clock .hand.hour .halo { fill: var(--hour); }
+  .clock .hand.minute path, .clock .hand.minute .halo { fill: var(--minute); }
+  .clock .halo { opacity: 0; }
+  .clock.live .halo { opacity: .22; }
+  .clock.live .hand.active .halo { opacity: .5; }
+  .clock.live { cursor: grab; }
+  .clock .cap { fill: #33415c; }
+  .clock .cap2 { fill: #fff; }
+
+  /* ----- flip clock ----- */
+  .flips { display: flex; align-items: flex-start; justify-content: center; gap: 8px; }
+  .unit { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .cap-label { font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent, var(--muted)); }
+  .colon { align-self: center; font-size: 3rem; font-weight: 800; color: #33415c; margin-top: -26px; }
+  .flips.nolabels .colon { margin-top: 0; }
+  .flip {
+    --h: clamp(76px, 11vw, 112px); --r: calc(var(--h) * .1);
+    position: relative; height: var(--h); width: calc(var(--h) * .92); border-radius: var(--r);
+    font-size: calc(var(--h) * .56); font-weight: 800; color: #f8fafc; font-variant-numeric: tabular-nums;
+    box-shadow: 0 6px 12px rgba(20, 30, 60, .3);
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  }
+  .flip.ampm { font-size: calc(var(--h) * .4); }
+  .flip.sm { --h: clamp(54px, 8vw, 72px); }
+  .flip.live { cursor: ns-resize; }
+  .flip.live.drag { filter: brightness(1.18); }
+  .flip:focus-visible { outline: 4px solid #7aa7ff; outline-offset: 3px; }
+  .half { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .half.top, .half.ftop { top: 0; border-radius: var(--r) var(--r) 0 0; transform-origin: 50% 100%; background: linear-gradient(#3b4150, #2b2f3a); }
+  .half.bot, .half.fbot { bottom: 0; border-radius: 0 0 var(--r) var(--r); transform-origin: 50% 0; background: linear-gradient(#262a34, #1e222b); }
+  .half span { position: absolute; left: 0; right: 0; height: 200%; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .top span, .ftop span { top: 0; }
+  .bot span, .fbot span { bottom: 0; }
+  .flap { visibility: hidden; z-index: 2; }
+  .flip::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 1px); height: 2px; background: #0b0d12; opacity: .75; z-index: 5; pointer-events: none; }
+  .chev { position: absolute; left: 0; right: 0; text-align: center; font-style: normal; font-size: 11px; line-height: 1; color: rgba(255, 255, 255, .32); z-index: 6; pointer-events: none; display: none; }
+  .flip.live .chev { display: block; }
+  .chev.up { top: 5px; } .chev.dn { bottom: 5px; }
+
+  .target { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .target .lbl { font-weight: 800; color: var(--muted); font-size: .95rem; }
+  .target .flips { align-items: center; }
+  .target .colon { font-size: 2.2rem; margin-top: 0; }
+
+  /* ----- learn tab ----- */
+  .learn { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: stretch; }
+  .learn .panel { flex: 1 1 340px; max-width: 540px; justify-content: center; }
+  .learn .clock { width: min(100%, 460px); }
+  .tips { margin: 6px 0 0; padding: 0 0 0 1.2em; color: #3b4a6b; font-weight: 700; line-height: 1.5; align-self: stretch; }
+  .tips b.h { color: var(--hour); } .tips b.m { color: var(--minute); }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: #3b4a6b; min-height: 44px; cursor: pointer; }
+  .toggle input { width: 22px; height: 22px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Clock Trainer</h1>
+  <div class="tabs" role="tablist" aria-label="Mode">
+    <button class="tab" role="tab" id="tab-test" aria-controls="view-test" aria-selected="true">Test room</button>
+    <button class="tab" role="tab" id="tab-learn" aria-controls="view-learn" aria-selected="false">Learn</button>
+  </div>
+</header>
+
+<main>
+  <noscript><p>This page needs JavaScript.</p></noscript>
+
+  <!-- ===== TEST ROOM ===== -->
+  <section id="view-test" role="tabpanel" aria-labelledby="tab-test">
+    <div class="toolbar">
+      <span>Difficulty:</span>
+      <div class="seg" role="group" aria-label="Difficulty">
+        <button data-level="hour" aria-pressed="false">On the hour</button>
+        <button data-level="quarter" aria-pressed="false">Quarters</button>
+        <button data-level="five" aria-pressed="true">5 minutes</button>
+        <button data-level="any" aria-pressed="false">Any minute</button>
+      </div>
+    </div>
+
+    <div class="rooms">
+      <article class="panel" id="left">
+        <div class="score">&#11088; <span id="L-score">0</span></div>
+        <h2>Read the clock</h2>
+        <p class="sub">What time is it? Drag the numbers up and down.</p>
+        <div class="clock-host" id="L-clock"></div>
+        <div class="flips" id="L-flips"></div>
+        <div class="actions">
+          <button class="btn primary" id="L-check">Check</button>
+          <button class="btn ghost" id="L-new">New time</button>
+        </div>
+        <p class="msg" id="L-msg" aria-live="polite"></p>
+      </article>
+
+      <article class="panel" id="right">
+        <div class="score">&#11088; <span id="R-score">0</span></div>
+        <h2>Set the clock</h2>
+        <div class="target">
+          <span class="lbl">Make the clock show</span>
+          <div class="flips nolabels" id="R-target"></div>
+        </div>
+        <div class="clock-host" id="R-clock"></div>
+        <div class="flips" id="R-flips"></div>
+        <div class="actions">
+          <button class="btn primary" id="R-check">Check</button>
+          <button class="btn ghost" id="R-new">New time</button>
+        </div>
+        <p class="msg" id="R-msg" aria-live="polite"></p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===== LEARN ===== -->
+  <section id="view-learn" role="tabpanel" aria-labelledby="tab-learn" hidden>
+    <div class="learn">
+      <article class="panel">
+        <div class="clock-host" id="N-clock"></div>
+        <label class="toggle"><input type="checkbox" id="N-min" checked> Show minute numbers</label>
+      </article>
+      <article class="panel">
+        <div class="flips" id="N-flips"></div>
+        <ul class="tips">
+          <li>Drag the short <b class="h">red hour hand</b>: the hour changes, the minutes stay.</li>
+          <li>Drag the long <b class="m">blue minute hand</b> around: the minutes change and the hour hand moves along!</li>
+          <li>Drag the flip numbers up or down to change them too.</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = (s) => document.querySelector(s);
+  const mod = (a, n) => ((a % n) + n) % n;
+  const pad = (n) => String(n).padStart(2, '0');
+  const rand = (n) => Math.floor(Math.random() * n);
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // A time is stored as minutes since midnight (0..1439), so AM/PM is just T >= 720.
+  const parts = (T) => { const h24 = Math.floor(T / 60); return { h: h24 % 12 || 12, m: T % 60, pm: h24 >= 12 }; };
+  // Signed shortest distance from a to b on a ring of size n (-1 / 0 / +1 is all the flip needs).
+  const dirOf = (a, b, n) => Math.sign(mod(b - a + n / 2, n) - n / 2);
+
+  /* ------------------------------------------------------------------ */
+  /* Flip card: a number you drag up/down. It owns no value, it only     */
+  /* reports steps (+1 / -1) and animates whatever text it is given.     */
+  /* ------------------------------------------------------------------ */
+  function createFlip(host, o) {
+    const unit = document.createElement('div');
+    unit.className = 'unit';
+    const el = document.createElement('div');
+    el.className = 'flip' + (o.small ? ' sm' : '') + (o.ampm ? ' ampm' : '') + (o.interactive ? ' live' : '');
+    el.innerHTML = '<div class="half top"><span></span></div><div class="half bot"><span></span></div>' +
+      '<div class="half flap ftop"><span></span></div><div class="half flap fbot"><span></span></div>' +
+      '<i class="chev up">&#9650;</i><i class="chev dn">&#9660;</i>';
+    unit.appendChild(el);
+    if (o.caption) {
+      const c = document.createElement('div');
+      c.className = 'cap-label';
+      c.textContent = o.caption;
+      if (o.accent) c.style.setProperty('--accent', o.accent);
+      unit.appendChild(c);
+    }
+    host.appendChild(unit);
+
+    const [topS, botS, ftopS, fbotS] = el.querySelectorAll('span');
+    const [ftop, fbot] = el.querySelectorAll('.flap');
+    const all = [topS, botS, ftopS, fbotS];
+    let cur = o.text || '', gen = 0, running = [], lastFlip = 0;
+
+    const paint = (t) => all.forEach((s) => { s.textContent = t; });
+    const describe = () => {
+      el.setAttribute('aria-label', o.label);
+      if (o.interactive) el.setAttribute('aria-valuetext', cur);
+      else el.setAttribute('aria-label', o.label + ' ' + cur);
+    };
+    function settle() {
+      gen++;
+      running.forEach((a) => a.cancel());
+      running = [];
+      ftop.style.visibility = fbot.style.visibility = 'hidden';
+      paint(cur);
+    }
+    function animate(old, nw, dir, D) {
+      settle();
+      const g = gen, P = 'perspective(320px) ';
+      const down = dir > 0;              // +1: the top flap falls; -1: the bottom flap swings back up
+      const first = down ? ftop : fbot, second = down ? fbot : ftop;
+      (down ? topS : botS).textContent = nw;
+      (down ? botS : topS).textContent = old;
+      (down ? ftopS : fbotS).textContent = old;
+      (down ? fbotS : ftopS).textContent = nw;
+      first.style.visibility = 'visible';
+      const a1 = first.animate(
+        [{ transform: P + 'rotateX(0deg)' }, { transform: P + 'rotateX(' + (down ? -90 : 90) + 'deg)' }],
+        { duration: D, easing: 'ease-in', fill: 'forwards' });
+      running.push(a1);
+      a1.onfinish = () => {
+        if (g !== gen) return;
+        first.style.visibility = 'hidden';
+        second.style.visibility = 'visible';
+        const a2 = second.animate(
+          [{ transform: P + 'rotateX(' + (down ? 90 : -90) + 'deg)' }, { transform: P + 'rotateX(0deg)' }],
+          { duration: D, easing: 'ease-out' });
+        running.push(a2);
+        a2.onfinish = () => { if (g === gen) settle(); };
+      };
+    }
+    function set(text, dir) {
+      if (text === cur) return;
+      const old = cur;
+      cur = text;
+      describe();
+      // A spinning wheel changes faster than a flap can fall: speed the flaps up, then skip them.
+      const now = performance.now(), gap = now - lastFlip;
+      lastFlip = now;
+      if (!dir || reduceMotion || !el.animate || gap < 30) settle(); else animate(old, text, dir, Math.min(100, gap / 2.5));
+    }
+
+    if (o.interactive) {
+      // Spin wheel: the number follows the finger by `step` px per value, a fast drag is amplified, and
+      // letting go mid-fling keeps it spinning until friction stops it. Move/up are tracked on the window,
+      // so dragging off the number is fine and releasing anywhere ends the drag.
+      const step = o.step || 42, fling = o.fling == null ? 1 : o.fling;
+      let id = null, lastY = 0, lastT = 0, v = 0, vel = 0, samples = [], acc = 0, emitted = 0, raf = 0, wheel = 0;
+      el.tabIndex = 0;
+      el.setAttribute('role', 'spinbutton');
+      const advance = (delta) => {
+        acc += delta;
+        const target = Math.round(acc);
+        while (emitted < target) { emitted++; o.onStep(1); }
+        while (emitted > target) { emitted--; o.onStep(-1); }
+      };
+      const stopSpin = () => { cancelAnimationFrame(raf); raf = 0; };
+      const spin = (t0) => {
+        raf = requestAnimationFrame((t) => {
+          const dt = Math.min(50, t - t0) / 1000;
+          advance(vel * dt);
+          vel *= Math.exp(-dt * 3);
+          if (Math.abs(vel) > 2) spin(t); else raf = 0;
+        });
+      };
+      const gain = (px) => 1 + fling * Math.min(5, Math.max(0, (Math.abs(px) - 0.6) * 2));
+      const move = (e) => {
+        if (e.pointerId !== id) return;
+        if (e.pointerType === 'mouse' && e.buttons === 0) return end(e);   // released outside the window
+        const dy = e.clientY - lastY;
+        lastY = e.clientY; lastT = e.timeStamp;
+        // Speed over the last ~100ms (px/ms); a single twitchy sample can't masquerade as a fling.
+        samples.push({ t: e.timeStamp, y: e.clientY });
+        while (samples.length > 2 && e.timeStamp - samples[0].t > 100) samples.shift();
+        v = (e.clientY - samples[0].y) / Math.max(16, e.timeStamp - samples[0].t);
+        advance(dy / step * gain(v));
+      };
+      function end(e) {
+        if (e.pointerId !== id) return;
+        id = null;
+        el.classList.remove('drag');
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', end);
+        window.removeEventListener('pointercancel', end);
+        const idle = e.timeStamp - lastT > 80;                              // finger rested before letting go
+        if (!idle && Math.abs(v) > 0.7) { vel = v * 1000 / step * gain(v); spin(performance.now()); }
+      }
+      el.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.preventDefault();
+        stopSpin();
+        id = e.pointerId; lastY = e.clientY; lastT = e.timeStamp; v = 0; acc = 0; emitted = 0;
+        samples = [{ t: e.timeStamp, y: e.clientY }];
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', end);
+        window.addEventListener('pointercancel', end);
+        el.classList.add('drag');
+        el.focus({ preventScroll: true });
+      });
+      el.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        wheel += e.deltaY;
+        while (Math.abs(wheel) >= 60) { const d = wheel > 0 ? 1 : -1; wheel -= d * 60; o.onStep(d); }
+      }, { passive: false });
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); o.onStep(e.key === 'ArrowUp' ? 1 : -1); }
+      });
+    }
+    describe();
+    settle();
+    return { set };
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Analog clock (SVG). Hands are dragged; onChange(T) reports the new  */
+  /* time. Minute hand: minute by minute, carrying into the hour. Hour    */
+  /* hand: whole hours only, minutes untouched.                          */
+  /* ------------------------------------------------------------------ */
+  const C = 230, HOUR_LEN = 100, MIN_LEN = 152, HIT = 42;
+
+  function clockMarkup() {
+    const pt = (r, deg) => [C + r * Math.sin(deg * Math.PI / 180), C - r * Math.cos(deg * Math.PI / 180)];
+    let s = '<svg class="clock" viewBox="0 0 460 460" role="img" aria-label="Analog clock">';
+    for (let i = 0; i < 12; i++) { const [x, y] = pt(212, i * 30); s += `<text class="mnum" x="${x.toFixed(1)}" y="${y.toFixed(1)}" dy=".35em">${i * 5}</text>`; }
+    s += `<circle class="face" cx="${C}" cy="${C}" r="190" fill="#fff"/><circle class="rim" cx="${C}" cy="${C}" r="190"/>`;
+    for (let i = 0; i < 60; i++) {
+      const big = i % 5 === 0, [x1, y1] = pt(big ? 164 : 174, i * 6), [x2, y2] = pt(183, i * 6);
+      s += `<line class="tick" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke-width="${big ? 4 : 2}"/>`;
+    }
+    for (let i = 1; i <= 12; i++) { const [x, y] = pt(138, i * 30); s += `<text class="num" x="${x.toFixed(1)}" y="${y.toFixed(1)}" dy=".35em">${i}</text>`; }
+    let rays = '';
+    for (let i = 0; i < 8; i++) { const a = i * 45 * Math.PI / 180; rays += `<line x1="${(10 * Math.sin(a)).toFixed(1)}" y1="${(-10 * Math.cos(a)).toFixed(1)}" x2="${(15 * Math.sin(a)).toFixed(1)}" y2="${(-15 * Math.cos(a)).toFixed(1)}"/>`; }
+    s += `<g transform="translate(${C} ${C})">` +
+      `<g class="hand hour"><circle class="halo" cy="${-HOUR_LEN + 2}" r="17"/><path d="M-8 14 L-6 -92 Q0 -110 6 -92 L8 14Z"/></g>` +
+      `<g class="hand minute"><circle class="halo" cy="${-MIN_LEN + 2}" r="15"/><path d="M-5.5 18 L-3.5 -148 Q0 -162 3.5 -148 L5.5 18Z"/></g>` +
+      '<circle class="cap" r="11"/><circle class="cap2" r="4"/></g>';
+    s += `<g class="ampm" transform="translate(${C} 300)">` +
+      `<g class="sun" transform="translate(-36 0)"><circle r="7" fill="#f5a623"/><g stroke="#f5a623" stroke-width="3" stroke-linecap="round">${rays}</g></g>` +
+      `<path class="moon" transform="translate(-36 0)" fill="#6f7fc7" d="M4 -9.2 A10 10 0 1 0 9.2 4 A8 8 0 0 1 4 -9.2Z"/>` +
+      `<text x="-12" y="0" dy=".35em">AM</text></g>`;
+    s += '</svg>';
+    return s;
+  }
+
+  function createClock(host, o = {}) {
+    host.insertAdjacentHTML('beforeend', clockMarkup());
+    const svg = host.lastElementChild;
+    const face = svg.querySelector('.face'), sun = svg.querySelector('.sun'), moon = svg.querySelector('.moon');
+    const ampmText = svg.querySelector('.ampm text');
+    const hourG = svg.querySelector('.hand.hour'), minG = svg.querySelector('.hand.minute');
+    let T = 0, drag = null;
+    if (o.interactive) svg.classList.add('live');
+
+    function render() {
+      const p = parts(T);
+      hourG.setAttribute('transform', `rotate(${(T % 720) / 2})`);
+      minG.setAttribute('transform', `rotate(${(T % 60) * 6})`);
+      face.setAttribute('fill', p.pm ? '#e1e7fa' : '#fff6dc');
+      sun.style.display = p.pm ? 'none' : '';
+      moon.style.display = p.pm ? '' : 'none';
+      ampmText.textContent = p.pm ? 'PM' : 'AM';
+      svg.setAttribute('aria-label', o.announce === false ? 'Analog clock' : `Analog clock showing ${p.h}:${pad(p.m)} ${p.pm ? 'PM' : 'AM'}`);
+    }
+    const local = (e) => {
+      const r = svg.getBoundingClientRect(), k = 460 / r.width;
+      return { x: (e.clientX - r.left) * k - C, y: (e.clientY - r.top) * k - C };
+    };
+    const tip = (deg, len) => ({ x: len * Math.sin(deg * Math.PI / 180), y: -len * Math.cos(deg * Math.PI / 180) });
+    const segDist = (p, t) => {
+      const u = Math.max(0, Math.min(1, (p.x * t.x + p.y * t.y) / (t.x * t.x + t.y * t.y)));
+      return Math.hypot(p.x - u * t.x, p.y - u * t.y);
+    };
+
+    if (o.interactive) {
+      svg.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        const p = local(e), th = tip((T % 720) / 2, HOUR_LEN), tm = tip((T % 60) * 6, MIN_LEN);
+        const dh = segDist(p, th), dm = segDist(p, tm);
+        if (Math.min(dh, dm) > HIT) return;
+        let kind = dh < dm ? 'hour' : 'minute';
+        // Hands lying on top of each other: choose the one whose tip is closer to the finger.
+        if (Math.abs(dh - dm) < 12) kind = Math.hypot(p.x - th.x, p.y - th.y) < Math.hypot(p.x - tm.x, p.y - tm.y) ? 'hour' : 'minute';
+        e.preventDefault();
+        drag = { id: e.pointerId, kind };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', end);
+        window.addEventListener('pointercancel', end);
+        (kind === 'hour' ? hourG : minG).classList.add('active');
+      });
+      function move(e) {
+        if (!drag || e.pointerId !== drag.id) return;
+        if (e.pointerType === 'mouse' && e.buttons === 0) return end(e);   // released outside the window
+        const p = local(e);
+        if (!(Math.hypot(p.x, p.y) >= 14)) return;      // angle is meaningless near the pivot (and NaN-safe)
+        const a = mod(Math.atan2(p.x, -p.y) * 180 / Math.PI, 360);
+        let next = T;
+        if (drag.kind === 'minute') {
+          next = mod(T + (mod(Math.round(a / 6) % 60 - T % 60 + 30, 60) - 30), 1440);
+        } else {
+          const k = mod(Math.round((a - (T % 60) * 0.5) / 30), 12);   // hour whose hand position is nearest
+          next = mod(T + (mod(k - Math.floor(T / 60) % 12 + 6, 12) - 6) * 60, 1440);
+        }
+        if (next !== T) { T = next; render(); if (o.onChange) o.onChange(T); }
+      }
+      function end(e) {
+        if (!drag || e.pointerId !== drag.id) return;
+        drag = null;
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', end);
+        window.removeEventListener('pointercancel', end);
+        hourG.classList.remove('active'); minG.classList.remove('active');
+      }
+    }
+    render();
+    return {
+      set(t) { T = t; render(); },
+      get() { return T; },
+      showMinutes(on) { svg.classList.toggle('show-min', on); },
+    };
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Test room                                                           */
+  /* ------------------------------------------------------------------ */
+  function randomTime(level, avoid) {
+    let T;
+    do {
+      const m = level === 'hour' ? 0 : level === 'quarter' ? 15 * rand(4) : level === 'five' ? 5 * rand(12) : rand(60);
+      T = rand(24) * 60 + m;
+    } while (T === avoid);
+    return T;
+  }
+  function hint(a, t, checkPm) {
+    if (checkPm && a.h === t.h && a.m === t.m) return 'Almost! Look at AM / PM.';
+    if (a.h === t.h) return 'The hour is right. Look at the long hand again!';
+    if (a.m === t.m) return 'The minutes are right. Look at the short hand again!';
+    return 'Not quite. Try again!';
+  }
+  function feedback(panel, msg, ok, text) {
+    panel.classList.remove('ok', 'bad');
+    void panel.offsetWidth;                              // restart the shake animation
+    panel.classList.add(ok ? 'ok' : 'bad');
+    msg.className = 'msg ' + (ok ? 'ok' : 'bad');
+    msg.textContent = text;
+  }
+  function reset(panel, msg) { panel.classList.remove('ok', 'bad'); msg.className = 'msg'; msg.textContent = ''; }
+  const PRAISE = ['Correct! Great job!', 'Yes! Well done!', 'Perfect!', 'You got it!', 'Super!'];
+
+  function initTest() {
+    let level = 'five';
+    try { level = localStorage.getItem('clock-level') || level; } catch (e) { /* storage blocked: fine */ }
+    const levelBtns = [...document.querySelectorAll('[data-level]')];
+
+    /* --- left: read the analog clock, type the digital time --- */
+    const L = { T: 0, h: 12, m: 0, busy: false, score: 0 };
+    const lClock = createClock($('#L-clock'), { announce: false });
+    const lh = createFlip($('#L-flips'), {
+      label: 'Hours', caption: 'hours', accent: 'var(--hour)', interactive: true, text: '12', step: 42, fling: 0.4,
+      onStep: (d) => { L.h = mod(L.h - 1 + d, 12) + 1; lh.set(pad(L.h), d); },
+    });
+    $('#L-flips').insertAdjacentHTML('beforeend', '<span class="colon">:</span>');
+    const lm = createFlip($('#L-flips'), {
+      label: 'Minutes', caption: 'minutes', accent: 'var(--minute)', interactive: true, text: '00', step: 22,
+      onStep: (d) => { L.m = mod(L.m + d, 60); lm.set(pad(L.m), d); },
+    });
+    function newLeft() {
+      L.busy = false;
+      L.T = randomTime(level, L.T);
+      lClock.set(L.T);
+      const p = parts(L.T);
+      L.h = p.h === 12 && p.m === 0 ? 6 : 12; L.m = 0;
+      lh.set(pad(L.h)); lm.set(pad(L.m));
+      reset($('#left'), $('#L-msg'));
+    }
+    $('#L-check').addEventListener('click', () => {
+      if (L.busy) return;
+      const t = parts(L.T);
+      if (L.h === t.h && L.m === t.m) {
+        L.busy = true; $('#L-score').textContent = ++L.score;
+        feedback($('#left'), $('#L-msg'), true, PRAISE[rand(PRAISE.length)]);
+        setTimeout(newLeft, 1500);
+      } else feedback($('#left'), $('#L-msg'), false, hint({ h: L.h, m: L.m }, t, false));
+    });
+    $('#L-new').addEventListener('click', () => { if (!L.busy) newLeft(); });
+
+    /* --- right: read the digital time, set the analog clock --- */
+    const R = { T: 0, busy: false, score: 0, pm: false };
+    const tgtBox = $('#R-target');
+    const th = createFlip(tgtBox, { label: 'Hours', small: true, text: '12' });
+    tgtBox.insertAdjacentHTML('beforeend', '<span class="colon">:</span>');
+    const tm = createFlip(tgtBox, { label: 'Minutes', small: true, text: '00' });
+    const tp = createFlip(tgtBox, { label: 'AM or PM', small: true, ampm: true, text: 'AM' });
+    const rap = createFlip($('#R-flips'), {
+      label: 'AM or PM', caption: 'AM / PM', interactive: true, ampm: true, text: 'AM', step: 42, fling: 0,
+      onStep: () => { rClock.set(mod(rClock.get() + 720, 1440)); syncAmpm(true); },
+    });
+    const rClock = createClock($('#R-clock'), { interactive: true, onChange: () => syncAmpm(true) });
+    function syncAmpm(animate) {
+      const pm = parts(rClock.get()).pm;
+      rap.set(pm ? 'PM' : 'AM', animate && pm !== R.pm ? (pm ? 1 : -1) : 0);
+      R.pm = pm;
+    }
+    function newRight() {
+      R.busy = false;
+      R.T = randomTime(level, R.T);
+      const p = parts(R.T);
+      th.set(pad(p.h)); tm.set(pad(p.m)); tp.set(p.pm ? 'PM' : 'AM');
+      rClock.set(R.T === 0 ? 360 : 0);
+      syncAmpm(false);
+      reset($('#right'), $('#R-msg'));
+    }
+    $('#R-check').addEventListener('click', () => {
+      if (R.busy) return;
+      if (rClock.get() === R.T) {
+        R.busy = true; $('#R-score').textContent = ++R.score;
+        feedback($('#right'), $('#R-msg'), true, PRAISE[rand(PRAISE.length)]);
+        setTimeout(newRight, 1500);
+      } else feedback($('#right'), $('#R-msg'), false, hint(parts(rClock.get()), parts(R.T), true));
+    });
+    $('#R-new').addEventListener('click', () => { if (!R.busy) newRight(); });
+
+    /* --- difficulty --- */
+    function setLevel(l, persist) {
+      level = l;
+      levelBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.level === l)));
+      if (persist) { try { localStorage.setItem('clock-level', l); } catch (e) { /* ignore */ } }
+      newLeft(); newRight();
+    }
+    levelBtns.forEach((b) => b.addEventListener('click', () => setLevel(b.dataset.level, true)));
+    setLevel(level, false);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Learn tab: one analog clock and one flip clock sharing one time     */
+  /* ------------------------------------------------------------------ */
+  function initLearn() {
+    const now = new Date();
+    let T = now.getHours() * 60 + now.getMinutes();
+    let shown = parts(T);
+    const clock = createClock($('#N-clock'), { interactive: true, onChange: (t) => { T = t; sync(); } });
+    const box = $('#N-flips');
+    const fh = createFlip(box, {
+      label: 'Hours', caption: 'hours', accent: 'var(--hour)', interactive: true, text: pad(shown.h), step: 42, fling: 0.4,
+      onStep: (d) => { T = mod(T + d * 60, 1440); clock.set(T); sync(); },
+    });
+    box.insertAdjacentHTML('beforeend', '<span class="colon">:</span>');
+    const fm = createFlip(box, {
+      label: 'Minutes', caption: 'minutes', accent: 'var(--minute)', interactive: true, text: pad(shown.m), step: 22,
+      onStep: (d) => { T = mod(T + d, 1440); clock.set(T); sync(); },   // carries into the hour, like the minute hand
+    });
+    const fa = createFlip(box, {
+      label: 'AM or PM', caption: 'AM / PM', interactive: true, ampm: true, text: shown.pm ? 'PM' : 'AM', step: 42, fling: 0,
+      onStep: () => { T = mod(T + 720, 1440); clock.set(T); sync(); },
+    });
+    function sync() {
+      const p = parts(T);
+      fh.set(pad(p.h), dirOf(shown.h, p.h, 12));
+      fm.set(pad(p.m), dirOf(shown.m, p.m, 60));
+      fa.set(p.pm ? 'PM' : 'AM', p.pm === shown.pm ? 0 : p.pm ? 1 : -1);
+      shown = p;
+    }
+    clock.set(T);
+    clock.showMinutes(true);
+    $('#N-min').addEventListener('change', (e) => clock.showMinutes(e.target.checked));
+  }
+
+  /* ------------------------------------------------------------------ */
+  function showTab(name) {
+    ['test', 'learn'].forEach((n) => {
+      $('#view-' + n).hidden = n !== name;
+      $('#tab-' + n).setAttribute('aria-selected', String(n === name));
+    });
+    try { history.replaceState(null, '', name === 'learn' ? '#learn' : '#test'); } catch (e) { /* ignore */ }
+  }
+  $('#tab-test').addEventListener('click', () => showTab('test'));
+  $('#tab-learn').addEventListener('click', () => showTab('learn'));
+
+  initTest();
+  initLearn();
+  if (location.hash === '#learn') showTab('learn');
+})();
+</script>
+</body>
+</html>
