@@ -37,19 +37,26 @@
   }
   [hidden] { display: none !important; }
 
-  header { max-width: 1100px; margin: 0 auto; padding: 14px 20px 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; }
+  header { max-width: 1100px; margin: 0 auto; padding: 14px 76px 6px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; }
   h1 { font-size: 1.7rem; margin: 0; }
   .tabs { display: flex; gap: 4px; background: #d6e1fa; padding: 5px; border-radius: 999px; }
   .tab { font: inherit; font-weight: 800; border: 0; background: transparent; color: #3b4a6b; padding: 10px 22px; border-radius: 999px; cursor: pointer; touch-action: manipulation; min-height: 44px; }
   .tab[aria-selected="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 5px rgba(20, 40, 90, .2); }
-  .fmt { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-left: auto; color: var(--muted); font-weight: 700; }
   main { max-width: 1100px; margin: 0 auto; padding: 8px 20px 36px; }
 
-  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 14px; color: var(--muted); font-weight: 700; }
   .seg { display: flex; flex-wrap: wrap; gap: 6px; }
-  .seg button { font: inherit; font-weight: 800; font-size: .95rem; border: 2px solid #c5d3f3; background: #fff; color: #3b4a6b; padding: 8px 14px; border-radius: 999px; cursor: pointer; touch-action: manipulation; min-height: 40px; }
+  .seg button { font: inherit; font-weight: 800; font-size: .9rem; border: 2px solid #c5d3f3; background: #fff; color: #3b4a6b; padding: 6px 12px; border-radius: 999px; cursor: pointer; touch-action: manipulation; min-height: 40px; }
   .seg button[aria-pressed="true"] { background: var(--minute); border-color: var(--minute); color: #fff; }
 
+  .settings { position: absolute; top: 14px; right: 16px; z-index: 20; }
+  .gear { width: 48px; height: 48px; border: 0; border-radius: 50%; background: #fff; color: #3b4a6b; box-shadow: 0 1px 5px rgba(20, 40, 90, .2); display: grid; place-items: center; cursor: pointer; touch-action: manipulation; }
+  .gear svg { width: 26px; height: 26px; transition: transform .3s; }
+  .gear[aria-expanded="true"] { background: var(--minute); color: #fff; }
+  .gear[aria-expanded="true"] svg { transform: rotate(45deg); }
+  .menu { position: absolute; top: 56px; right: 0; width: min(330px, calc(100vw - 24px)); background: #fff; border-radius: 18px; padding: 14px; box-shadow: 0 12px 34px rgba(20, 40, 90, .28); display: flex; flex-direction: column; gap: 14px; }
+  .menu .row { display: flex; flex-direction: column; gap: 6px; }
+  .menu .lbl { font-weight: 800; font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .menu .lbl small { text-transform: none; letter-spacing: 0; font-weight: 700; }
   .rooms { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 640px) { .rooms { grid-template-columns: 1fr; } }
   .panel { background: var(--card); border-radius: 26px; padding: 18px 14px 20px; box-shadow: 0 10px 30px rgba(40, 70, 140, .13); border: 4px solid transparent; display: flex; flex-direction: column; align-items: center; gap: 12px; transition: border-color .2s; }
@@ -142,11 +149,33 @@
     <button class="tab" role="tab" id="tab-test" aria-controls="view-test" aria-selected="true">Test room</button>
     <button class="tab" role="tab" id="tab-learn" aria-controls="view-learn" aria-selected="false">Learn</button>
   </div>
-  <div class="fmt">
-    <span>Digital clock:</span>
-    <div class="seg" role="group" aria-label="Digital clock format">
-      <button data-fmt="12" aria-pressed="true">12 h &middot; AM/PM</button>
-      <button data-fmt="24" aria-pressed="false">24 h</button>
+  <div class="settings">
+    <button class="gear" id="settings-btn" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="settings-menu">
+      <svg viewBox="-12 -12 24 24" aria-hidden="true"><g fill="currentColor">
+        <path fill-rule="evenodd" d="M-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0zM-7.5 0a7.5 7.5 0 1 0 15 0a7.5 7.5 0 1 0-15 0z"/>
+        <rect x="-2" y="-11" width="4" height="5" rx="1"/><rect x="-2" y="-11" width="4" height="5" rx="1" transform="rotate(45)"/>
+        <rect x="-2" y="-11" width="4" height="5" rx="1" transform="rotate(90)"/><rect x="-2" y="-11" width="4" height="5" rx="1" transform="rotate(135)"/>
+        <rect x="-2" y="-11" width="4" height="5" rx="1" transform="rotate(180)"/><rect x="-2" y="-11" width="4" height="5" rx="1" transform="rotate(225)"/>
+        <rect x="-2" y="-11" width="4" height="5" rx="1" transform="rotate(270)"/><rect x="-2" y="-11" width="4" height="5" rx="1" transform="rotate(315)"/>
+      </g></svg>
+    </button>
+    <div class="menu" id="settings-menu" role="group" aria-label="Settings" hidden>
+      <div class="row">
+        <span class="lbl">Digital clock</span>
+        <div class="seg">
+          <button data-fmt="12" aria-pressed="true">12 h &middot; AM/PM</button>
+          <button data-fmt="24" aria-pressed="false">24 h</button>
+        </div>
+      </div>
+      <div class="row">
+        <span class="lbl">Difficulty <small>(Test room)</small></span>
+        <div class="seg">
+          <button data-level="hour" aria-pressed="false">On the hour</button>
+          <button data-level="quarter" aria-pressed="false">Quarters</button>
+          <button data-level="five" aria-pressed="true">5 minutes</button>
+          <button data-level="any" aria-pressed="false">Any minute</button>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -156,16 +185,6 @@
 
   <!-- ===== TEST ROOM ===== -->
   <section id="view-test" role="tabpanel" aria-labelledby="tab-test">
-    <div class="toolbar">
-      <span>Difficulty:</span>
-      <div class="seg" role="group" aria-label="Difficulty">
-        <button data-level="hour" aria-pressed="false">On the hour</button>
-        <button data-level="quarter" aria-pressed="false">Quarters</button>
-        <button data-level="five" aria-pressed="true">5 minutes</button>
-        <button data-level="any" aria-pressed="false">Any minute</button>
-      </div>
-    </div>
-
     <div class="rooms">
       <article class="panel" id="left">
         <div class="score">&#11088; <span id="L-score">0</span></div>
@@ -490,8 +509,14 @@
   /* ------------------------------------------------------------------ */
   /* 12 h (AM/PM) or 24 h digital clock. The analog clock never changes. */
   /* ------------------------------------------------------------------ */
-  let fmt = '12';
-  try { if (localStorage.getItem('clock-format') === '24') fmt = '24'; } catch (e) { /* storage blocked: fine */ }
+  const settings = { format: '12', level: 'five' };
+  try {
+    const saved = JSON.parse(localStorage.getItem('clock-settings') || 'null') || {};
+    if (saved.format === '12' || saved.format === '24') settings.format = saved.format;
+    if (['hour', 'quarter', 'five', 'any'].includes(saved.level)) settings.level = saved.level;
+  } catch (e) { /* storage blocked or unreadable: use the defaults */ }
+  function saveSettings() { try { localStorage.setItem('clock-settings', JSON.stringify(settings)); } catch (e) { /* ignore */ } }
+  let fmt = settings.format;
   const fmtListeners = [];
   const fmtBtns = [...document.querySelectorAll('[data-fmt]')];
   const is24 = () => fmt === '24';
@@ -499,7 +524,7 @@
   function setFormat(f, persist) {
     fmt = f;
     fmtBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.fmt === f)));
-    if (persist) { try { localStorage.setItem('clock-format', f); } catch (e) { /* ignore */ } }
+    if (persist) { settings.format = f; saveSettings(); }
     fmtListeners.forEach((fn) => fn());
   }
   fmtBtns.forEach((b) => b.addEventListener('click', () => setFormat(b.dataset.fmt, true)));
@@ -532,8 +557,7 @@
   const PRAISE = ['Correct! Great job!', 'Yes! Well done!', 'Perfect!', 'You got it!', 'Super!'];
 
   function initTest() {
-    let level = 'five';
-    try { level = localStorage.getItem('clock-level') || level; } catch (e) { /* storage blocked: fine */ }
+    let level = settings.level;
     const levelBtns = [...document.querySelectorAll('[data-level]')];
 
     /* --- left: read the analog clock, type the digital time --- */
@@ -625,7 +649,7 @@
     function setLevel(l, persist) {
       level = l;
       levelBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.level === l)));
-      if (persist) { try { localStorage.setItem('clock-level', l); } catch (e) { /* ignore */ } }
+      if (persist) { settings.level = l; saveSettings(); }
       newLeft(); newRight();
     }
     levelBtns.forEach((b) => b.addEventListener('click', () => setLevel(b.dataset.level, true)));
@@ -690,6 +714,15 @@
   $('#tab-learn').addEventListener('click', () => showTab('learn'));
 
   fmtBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.fmt === fmt)));
+  const gear = $('#settings-btn'), menu = $('#settings-menu');
+  function toggleMenu(open) {
+    menu.hidden = !open;
+    gear.setAttribute('aria-expanded', String(open));
+  }
+  gear.addEventListener('click', () => toggleMenu(menu.hidden));
+  document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !e.target.closest('.settings')) toggleMenu(false); }, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { toggleMenu(false); gear.focus(); } });
+
   initTest();
   initLearn();
   if (location.hash === '#learn') showTab('learn');
