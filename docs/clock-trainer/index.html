@@ -42,6 +42,7 @@
   .tabs { display: flex; gap: 4px; background: #d6e1fa; padding: 5px; border-radius: 999px; }
   .tab { font: inherit; font-weight: 800; border: 0; background: transparent; color: #3b4a6b; padding: 10px 22px; border-radius: 999px; cursor: pointer; touch-action: manipulation; min-height: 44px; }
   .tab[aria-selected="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 5px rgba(20, 40, 90, .2); }
+  .fmt { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-left: auto; color: var(--muted); font-weight: 700; }
   main { max-width: 1100px; margin: 0 auto; padding: 8px 20px 36px; }
 
   .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 14px; color: var(--muted); font-weight: 700; }
@@ -141,6 +142,13 @@
     <button class="tab" role="tab" id="tab-test" aria-controls="view-test" aria-selected="true">Test room</button>
     <button class="tab" role="tab" id="tab-learn" aria-controls="view-learn" aria-selected="false">Learn</button>
   </div>
+  <div class="fmt">
+    <span>Digital clock:</span>
+    <div class="seg" role="group" aria-label="Digital clock format">
+      <button data-fmt="12" aria-pressed="true">12 h &middot; AM/PM</button>
+      <button data-fmt="24" aria-pressed="false">24 h</button>
+    </div>
+  </div>
 </header>
 
 <main>
@@ -220,7 +228,7 @@
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // A time is stored as minutes since midnight (0..1439), so AM/PM is just T >= 720.
-  const parts = (T) => { const h24 = Math.floor(T / 60); return { h: h24 % 12 || 12, m: T % 60, pm: h24 >= 12 }; };
+  const parts = (T) => { const h24 = Math.floor(T / 60); return { h: h24 % 12 || 12, h24, m: T % 60, pm: h24 >= 12 }; };
   // Signed shortest distance from a to b on a ring of size n (-1 / 0 / +1 is all the flip needs).
   const dirOf = (a, b, n) => Math.sign(mod(b - a + n / 2, n) - n / 2);
 
@@ -368,7 +376,7 @@
     }
     describe();
     settle();
-    return { set };
+    return { set, unit };
   }
 
   /* ------------------------------------------------------------------ */
@@ -480,6 +488,23 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* 12 h (AM/PM) or 24 h digital clock. The analog clock never changes. */
+  /* ------------------------------------------------------------------ */
+  let fmt = '12';
+  try { if (localStorage.getItem('clock-format') === '24') fmt = '24'; } catch (e) { /* storage blocked: fine */ }
+  const fmtListeners = [];
+  const fmtBtns = [...document.querySelectorAll('[data-fmt]')];
+  const is24 = () => fmt === '24';
+  const hourOf = (p) => (is24() ? p.h24 : p.h);          // what the hour wheel shows for parts p
+  function setFormat(f, persist) {
+    fmt = f;
+    fmtBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.fmt === f)));
+    if (persist) { try { localStorage.setItem('clock-format', f); } catch (e) { /* ignore */ } }
+    fmtListeners.forEach((fn) => fn());
+  }
+  fmtBtns.forEach((b) => b.addEventListener('click', () => setFormat(b.dataset.fmt, true)));
+
+  /* ------------------------------------------------------------------ */
   /* Test room                                                           */
   /* ------------------------------------------------------------------ */
   function randomTime(level, avoid) {
@@ -490,10 +515,10 @@
     } while (T === avoid);
     return T;
   }
-  function hint(a, t, checkPm) {
-    if (checkPm && a.h === t.h && a.m === t.m) return 'Almost! Look at AM / PM.';
-    if (a.h === t.h) return 'The hour is right. Look at the long hand again!';
-    if (a.m === t.m) return 'The minutes are right. Look at the short hand again!';
+  function hint(hourOk, minOk, ampmOnly) {
+    if (ampmOnly) return is24() ? 'Almost! Morning or afternoon? Look at AM / PM.' : 'Almost! Look at AM / PM.';
+    if (hourOk) return 'The hour is right. Look at the long hand again!';
+    if (minOk) return 'The minutes are right. Look at the short hand again!';
     return 'Not quite. Try again!';
   }
   function feedback(panel, msg, ok, text) {
@@ -516,30 +541,40 @@
     const lClock = createClock($('#L-clock'), { announce: false });
     const lh = createFlip($('#L-flips'), {
       label: 'Hours', caption: 'hours', accent: 'var(--hour)', interactive: true, text: '12', step: 42, fling: 0.4,
-      onStep: (d) => { L.h = mod(L.h - 1 + d, 12) + 1; lh.set(pad(L.h), d); },
+      // 12 h: 1..12. 24 h: 0..23, so an afternoon time can be entered.
+      onStep: (d) => { L.h = is24() ? mod(L.h + d, 24) : mod(L.h - 1 + d, 12) + 1; lh.set(pad(L.h), d); },
     });
     $('#L-flips').insertAdjacentHTML('beforeend', '<span class="colon">:</span>');
     const lm = createFlip($('#L-flips'), {
       label: 'Minutes', caption: 'minutes', accent: 'var(--minute)', interactive: true, text: '00', step: 22,
       onStep: (d) => { L.m = mod(L.m + d, 60); lm.set(pad(L.m), d); },
     });
+    // The time the answer must equal, in the units of the hour wheel.
+    const leftTarget = () => { const p = parts(L.T); return { h: hourOf(p), m: p.m }; };
+    function resetLeftAnswer() {
+      const t = leftTarget();
+      L.h = t.h === 12 && t.m === 0 ? 6 : 12; L.m = 0;     // never start on the right answer
+      lh.set(pad(L.h)); lm.set(pad(L.m));
+      reset($('#left'), $('#L-msg'));
+    }
     function newLeft() {
       L.busy = false;
       L.T = randomTime(level, L.T);
       lClock.set(L.T);
-      const p = parts(L.T);
-      L.h = p.h === 12 && p.m === 0 ? 6 : 12; L.m = 0;
-      lh.set(pad(L.h)); lm.set(pad(L.m));
-      reset($('#left'), $('#L-msg'));
+      resetLeftAnswer();
     }
     $('#L-check').addEventListener('click', () => {
       if (L.busy) return;
-      const t = parts(L.T);
+      const t = leftTarget();
       if (L.h === t.h && L.m === t.m) {
         L.busy = true; $('#L-score').textContent = ++L.score;
         feedback($('#left'), $('#L-msg'), true, PRAISE[rand(PRAISE.length)]);
         setTimeout(newLeft, 1500);
-      } else feedback($('#left'), $('#L-msg'), false, hint({ h: L.h, m: L.m }, t, false));
+      } else {
+        // 24 h only: right minutes and the right hour on the wrong half of the day (e.g. 3 instead of 15)
+        const halfDay = is24() && L.m === t.m && L.h !== t.h && L.h % 12 === t.h % 12;
+        feedback($('#left'), $('#L-msg'), false, hint(L.h === t.h, L.m === t.m, halfDay));
+      }
     });
     $('#L-new').addEventListener('click', () => { if (!L.busy) newLeft(); });
 
@@ -563,11 +598,15 @@
     function newRight() {
       R.busy = false;
       R.T = randomTime(level, R.T);
-      const p = parts(R.T);
-      th.set(pad(p.h)); tm.set(pad(p.m)); tp.set(p.pm ? 'PM' : 'AM');
+      renderTarget();
       rClock.set(R.T === 0 ? 360 : 0);
       syncAmpm(false);
       reset($('#right'), $('#R-msg'));
+    }
+    function renderTarget() {
+      const p = parts(R.T);
+      th.set(pad(hourOf(p))); tm.set(pad(p.m)); tp.set(p.pm ? 'PM' : 'AM');
+      tp.unit.hidden = is24();                              // 24 h needs no AM/PM on the digital time
     }
     $('#R-check').addEventListener('click', () => {
       if (R.busy) return;
@@ -575,7 +614,10 @@
         R.busy = true; $('#R-score').textContent = ++R.score;
         feedback($('#right'), $('#R-msg'), true, PRAISE[rand(PRAISE.length)]);
         setTimeout(newRight, 1500);
-      } else feedback($('#right'), $('#R-msg'), false, hint(parts(rClock.get()), parts(R.T), true));
+      } else {
+        const a = parts(rClock.get()), t = parts(R.T);
+        feedback($('#right'), $('#R-msg'), false, hint(a.h === t.h, a.m === t.m, a.h === t.h && a.m === t.m));
+      }
     });
     $('#R-new').addEventListener('click', () => { if (!R.busy) newRight(); });
 
@@ -588,6 +630,12 @@
     }
     levelBtns.forEach((b) => b.addEventListener('click', () => setLevel(b.dataset.level, true)));
     setLevel(level, false);
+
+    // Switching 12 h <-> 24 h keeps the current question, only the digital side changes.
+    fmtListeners.push(() => {
+      renderTarget();
+      if (!L.busy) resetLeftAnswer();
+    });
   }
 
   /* ------------------------------------------------------------------ */
@@ -600,7 +648,7 @@
     const clock = createClock($('#N-clock'), { interactive: true, onChange: (t) => { T = t; sync(); } });
     const box = $('#N-flips');
     const fh = createFlip(box, {
-      label: 'Hours', caption: 'hours', accent: 'var(--hour)', interactive: true, text: pad(shown.h), step: 42, fling: 0.4,
+      label: 'Hours', caption: 'hours', accent: 'var(--hour)', interactive: true, text: pad(hourOf(shown)), step: 42, fling: 0.4,
       onStep: (d) => { T = mod(T + d * 60, 1440); clock.set(T); sync(); },
     });
     box.insertAdjacentHTML('beforeend', '<span class="colon">:</span>');
@@ -614,11 +662,17 @@
     });
     function sync() {
       const p = parts(T);
-      fh.set(pad(p.h), dirOf(shown.h, p.h, 12));
+      fh.set(pad(hourOf(p)), dirOf(hourOf(shown), hourOf(p), is24() ? 24 : 12));
       fm.set(pad(p.m), dirOf(shown.m, p.m, 60));
       fa.set(p.pm ? 'PM' : 'AM', p.pm === shown.pm ? 0 : p.pm ? 1 : -1);
       shown = p;
     }
+    fmtListeners.push(() => {
+      shown = parts(T);
+      fh.set(pad(hourOf(shown)));
+      fa.unit.hidden = is24();
+    });
+    fa.unit.hidden = is24();
     clock.set(T);
     clock.showMinutes(true);
     $('#N-min').addEventListener('change', (e) => clock.showMinutes(e.target.checked));
@@ -635,6 +689,7 @@
   $('#tab-test').addEventListener('click', () => showTab('test'));
   $('#tab-learn').addEventListener('click', () => showTab('learn'));
 
+  fmtBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.fmt === fmt)));
   initTest();
   initLearn();
   if (location.hash === '#learn') showTab('learn');
