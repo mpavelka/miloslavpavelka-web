@@ -127,10 +127,21 @@
   .flip.live .chev { display: block; }
   .chev.up { top: 5px; } .chev.dn { bottom: 5px; }
 
-  .target { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .target .lbl { font-weight: 800; color: var(--muted); font-size: .95rem; }
-  .target .flips { align-items: center; }
-  .target .colon { font-size: 2.2rem; margin-top: 0; }
+  /* ----- written time ----- */
+  .words { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .3em .45em; font-size: clamp(1.2rem, 3.4vw, 1.65rem); font-weight: 800; line-height: 1.5; color: #3b4a6b; text-align: center; }
+  .words .w { white-space: nowrap; }
+  .words .w.dim { opacity: .4; }
+  .ans .words { font-size: clamp(1.05rem, 3vw, 1.3rem); }
+  .var { --c: #52618a; --bg: #e6ebf8; font: inherit; color: var(--c); background: var(--bg); border: 2px solid transparent; border-radius: .5em; padding: 0 .4em; }
+  .var.min { --c: #1f5bc0; --bg: #e3edff; }
+  .var.part { --c: #6a3fc4; --bg: #eee7fb; }
+  .var.hr { --c: #b8391a; --bg: #fde8e1; }
+  select.var { -webkit-appearance: none; appearance: none; cursor: pointer; touch-action: manipulation; min-height: 2.1em; padding-right: 1.45em; text-align: left; text-align-last: left;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2364708a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right .45em center; background-size: .6em; }
+  select.var:hover { border-color: var(--c); }
+  select.var:focus-visible { outline: 3px solid #7aa7ff; outline-offset: 2px; }
+  select.var option { color: var(--ink); font-weight: 700; background: #fff; }
 
   /* ----- learn tab ----- */
   .learn { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: stretch; }
@@ -140,6 +151,24 @@
   .tips b.h { color: var(--hour); } .tips b.m { color: var(--minute); }
   .toggle { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: #3b4a6b; min-height: 44px; cursor: pointer; }
   .toggle input { width: 22px; height: 22px; }
+  .learn .panel.wide { flex-basis: 100%; max-width: 1100px; }
+  .panel .hint { margin: 0; color: var(--muted); font-size: .9rem; font-weight: 700; text-align: center; }
+
+  /* ----- test room ----- */
+  .rooms.test { align-items: start; }
+  @media (min-width: 641px) { .rooms.test #qpanel { position: sticky; top: 12px; } }
+  .field { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 12px; font-weight: 800; color: #3b4a6b; }
+  .field select { font: inherit; font-weight: 800; color: var(--ink); background: #fff; border: 2px solid #c5d3f3; border-radius: 12px; padding: 8px 10px; min-height: 44px; cursor: pointer; }
+  .field select:focus-visible { outline: 3px solid #7aa7ff; outline-offset: 2px; }
+  .field .toggle { min-height: 40px; }
+  .ans { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 8px 14px; border: 3px solid #e3eaf9; border-radius: 20px; position: relative; }
+  .ans > h3 { margin: 0; font-size: .85rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .ans.ok { border-color: var(--ok); }
+  .ans.bad { border-color: var(--bad); }
+  .ans .mark { position: absolute; top: 8px; right: 12px; font-weight: 800; font-size: 1.3rem; }
+  .ans.ok .mark { color: var(--ok); } .ans.bad .mark { color: var(--bad); }
+  .qv { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .qv .words { font-size: clamp(1.4rem, 4vw, 2rem); }
 </style>
 </head>
 <body>
@@ -168,6 +197,13 @@
         </div>
       </div>
       <div class="row">
+        <span class="lbl">Language <small>(written time)</small></span>
+        <div class="seg">
+          <button data-lang="en" aria-pressed="true">English</button>
+          <button data-lang="cs" aria-pressed="false" lang="cs">&#268;e&scaron;tina</button>
+        </div>
+      </div>
+      <div class="row">
         <span class="lbl">Difficulty <small>(Test room)</small></span>
         <div class="seg">
           <button data-level="hour" aria-pressed="false">On the hour</button>
@@ -185,34 +221,27 @@
 
   <!-- ===== TEST ROOM ===== -->
   <section id="view-test" role="tabpanel" aria-labelledby="tab-test">
-    <div class="rooms">
-      <article class="panel" id="left">
-        <div class="score">&#11088; <span id="L-score">0</span></div>
-        <h2>Read the clock</h2>
-        <p class="sub">What time is it? Drag the numbers up and down.</p>
-        <div class="clock-host" id="L-clock"></div>
-        <div class="flips" id="L-flips"></div>
-        <div class="actions">
-          <button class="btn primary" id="L-check">Check</button>
-          <button class="btn ghost" id="L-new">New time</button>
-        </div>
-        <p class="msg" id="L-msg" aria-live="polite"></p>
+    <div class="rooms test">
+      <article class="panel" id="qpanel">
+        <h2>Question</h2>
+        <label class="field">Show me the <select id="Q-type">
+          <option value="analog">Analog clock</option>
+          <option value="digital">Digital clock</option>
+          <option value="words">Written time</option>
+          <option value="random">Random</option>
+        </select></label>
+        <p class="sub" id="Q-sub"></p>
+        <div id="Q-boxes" class="qv"></div>
+        <div class="actions"><button class="btn ghost" id="T-new">New time</button></div>
       </article>
 
-      <article class="panel" id="right">
-        <div class="score">&#11088; <span id="R-score">0</span></div>
-        <h2>Set the clock</h2>
-        <div class="target">
-          <span class="lbl">Make the clock show</span>
-          <div class="flips nolabels" id="R-target"></div>
-        </div>
-        <div class="clock-host" id="R-clock"></div>
-        <div class="flips" id="R-flips"></div>
-        <div class="actions">
-          <button class="btn primary" id="R-check">Check</button>
-          <button class="btn ghost" id="R-new">New time</button>
-        </div>
-        <p class="msg" id="R-msg" aria-live="polite"></p>
+      <article class="panel" id="apanel">
+        <div class="score">&#11088; <span id="T-score">0</span></div>
+        <h2>Answer</h2>
+        <div class="field" id="A-checks" role="group" aria-label="Answer with"></div>
+        <div id="A-boxes" class="qv"></div>
+        <div class="actions"><button class="btn primary" id="T-check">Check</button></div>
+        <p class="msg" id="T-msg" aria-live="polite"></p>
       </article>
     </div>
   </section>
@@ -230,7 +259,12 @@
           <li>Drag the short <b class="h">red hour hand</b>: the hour changes, the minutes stay.</li>
           <li>Drag the long <b class="m">blue minute hand</b> around: the minutes change and the hour hand moves along!</li>
           <li>Drag the flip numbers up or down to change them too.</li>
+          <li>Or pick the words from the lists below. All three clocks always show the same time.</li>
         </ul>
+      </article>
+      <article class="panel wide">
+        <div id="N-words"></div>
+        <p class="hint" id="N-hint"></p>
       </article>
     </div>
   </section>
@@ -507,27 +541,219 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* 12 h (AM/PM) or 24 h digital clock. The analog clock never changes. */
+  /* Settings: 12 h / 24 h digital clock, language of the written time.  */
   /* ------------------------------------------------------------------ */
-  const settings = { format: '12', level: 'five' };
+  const LEVELS = ['hour', 'quarter', 'five', 'any'], KINDS = ['analog', 'digital', 'words'];
+  const settings = {
+    format: '12', level: 'five', lang: /^cs\b/i.test(navigator.language || '') ? 'cs' : 'en',
+    question: 'analog', answers: { analog: true, digital: true, words: true },
+  };
   try {
     const saved = JSON.parse(localStorage.getItem('clock-settings') || 'null') || {};
     if (saved.format === '12' || saved.format === '24') settings.format = saved.format;
-    if (['hour', 'quarter', 'five', 'any'].includes(saved.level)) settings.level = saved.level;
+    if (LEVELS.includes(saved.level)) settings.level = saved.level;
+    if (saved.lang === 'en' || saved.lang === 'cs') settings.lang = saved.lang;
+    if (KINDS.includes(saved.question) || saved.question === 'random') settings.question = saved.question;
+    if (saved.answers && typeof saved.answers === 'object') KINDS.forEach((k) => { if (saved.answers[k] === false) settings.answers[k] = false; });
   } catch (e) { /* storage blocked or unreadable: use the defaults */ }
   function saveSettings() { try { localStorage.setItem('clock-settings', JSON.stringify(settings)); } catch (e) { /* ignore */ } }
-  let fmt = settings.format;
-  const fmtListeners = [];
-  const fmtBtns = [...document.querySelectorAll('[data-fmt]')];
-  const is24 = () => fmt === '24';
+  const settingListeners = [];
+  const is24 = () => settings.format === '24';
   const hourOf = (p) => (is24() ? p.h24 : p.h);          // what the hour wheel shows for parts p
-  function setFormat(f, persist) {
-    fmt = f;
-    fmtBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.fmt === f)));
-    if (persist) { settings.format = f; saveSettings(); }
-    fmtListeners.forEach((fn) => fn());
+  const segment = (attr, key) => {
+    const btns = [...document.querySelectorAll('[data-' + attr + ']')];
+    const paint = () => btns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset[attr] === settings[key])));
+    btns.forEach((b) => b.addEventListener('click', () => {
+      settings[key] = b.dataset[attr]; saveSettings(); paint();
+      settingListeners.forEach((fn) => fn(key));
+    }));
+    paint();
+  };
+  segment('fmt', 'format');
+  segment('lang', 'lang');
+
+  /* ------------------------------------------------------------------ */
+  /* The time in words. A text is  [pre minutes to] [anchor] hour [am/pm] */
+  /* [and suf minutes]. The anchor ("quarter past", "half past", "quarter */
+  /* to"; Czech "čtvrt na", "půl", "tři čtvrtě na") moves the hour's own  */
+  /* time by off[k] minutes, so the words always read as one moment:      */
+  /*   English "quarter past five"  = 5:15   Czech "čtvrt na pět"  = 4:15 */
+  /*   English "quarter to six"     = 5:45   Czech "půl šesté"     = 5:30 */
+  /* AM/PM describes the moment the whole text ends up at.                */
+  /* ------------------------------------------------------------------ */
+  /* WORDS-LOGIC-START */
+  const plural = (n, one, few, many) => (n === 1 ? one : n % 10 >= 2 && n % 10 <= 4 && (n < 10 || n > 20) ? few : many);
+  const LANGS = {
+    en: {
+      code: 'en',
+      anchors: ['—', 'quarter past', 'half past', 'quarter to'],
+      off: [0, 15, 30, -15],
+      ampm: ['am', 'pm'],
+      hour: (k, i) => ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'][i],
+      preBefore: () => '', preAfter: (n) => (n === 1 ? 'minute to' : 'minutes to'),
+      sufBefore: () => 'and', sufAfter: (n) => (n === 1 ? 'minute' : 'minutes'),
+      noun: (st) => (!st.k && !st.pre && !st.suf ? 'o’clock' : ''),
+      names: { pre: 'Minutes to', k: 'Quarter or half', hour: 'Hour', ampm: 'AM or PM', suf: 'Minutes after' },
+    },
+    cs: {
+      code: 'cs',
+      anchors: ['—', 'čtvrt na', 'půl', 'tři čtvrtě na'],
+      off: [0, -45, -30, -15],
+      ampm: ['dop.', 'odp.'],
+      // on the hour: "pět hodin"; quarter / three quarters: "na pět"; half: "půl páté" (ordinal, genitive)
+      hour: (k, i) => (k === 0
+        ? ['jedna', 'dvě', 'tři', 'čtyři', 'pět', 'šest', 'sedm', 'osm', 'devět', 'deset', 'jedenáct', 'dvanáct']
+        : k === 2
+          ? ['jedné', 'druhé', 'třetí', 'čtvrté', 'páté', 'šesté', 'sedmé', 'osmé', 'deváté', 'desáté', 'jedenácté', 'dvanácté']
+          : ['jednu', 'dvě', 'tři', 'čtyři', 'pět', 'šest', 'sedm', 'osm', 'devět', 'deset', 'jedenáct', 'dvanáct'])[i],
+      preBefore: () => 'za', preAfter: (n) => plural(n, 'minutu', 'minuty', 'minut'),
+      sufBefore: () => 'a', sufAfter: (n) => plural(n, 'minuta', 'minuty', 'minut'),
+      noun: (st) => (!st.k && !st.pre ? plural(st.H, 'hodina', 'hodiny', 'hodin') : ''),
+      names: { pre: 'Za kolik minut', k: 'Čtvrt nebo půl', hour: 'Hodina', ampm: 'Dopoledne nebo odpoledne', suf: 'A kolik minut' },
+    },
+  };
+  // Time of day -> the words that read it most naturally: round to the nearest quarter, the rest is
+  // "N minutes to ..." (before it) or "... and N minutes" (after it), so N is at most 7.
+  function wordsFromTime(L, T) {
+    const h24 = Math.floor(T / 60), m = T % 60, a = Math.round(m / 15), d = m - 15 * a;
+    const k = a % 4;                                    // a = 0 and a = 4 are both "on the hour"
+    const R = h24 * 60 + a * 15;                        // the minute of the day the words round to
+    return { pre: d < 0 ? -d : 0, k, H: mod(Math.round((R - L.off[k]) / 60), 12) || 12, pm: T >= 720, suf: d > 0 ? d : 0 };
   }
-  fmtBtns.forEach((b) => b.addEventListener('click', () => setFormat(b.dataset.fmt, true)));
+  function wordsToTime(L, st) {
+    return mod(st.H % 12 * 60 + L.off[st.k] - st.pre + st.suf, 720) + (st.pm ? 720 : 0);
+  }
+  /* WORDS-LOGIC-END */
+
+  /* ------------------------------------------------------------------ */
+  /* Views. The same time can be shown (or set) as an analog clock, flip */
+  /* numbers or words. Each view: set(T), get(), halfDay (does it know   */
+  /* AM from PM?). Interactive ones report changes through onChange(T).  */
+  /* ------------------------------------------------------------------ */
+  const el = (tag, cls, parent) => { const e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e; };
+
+  function createAnalog(host, o = {}) {
+    const box = el('div', 'clock-host', host);
+    const clock = createClock(box, { interactive: o.interactive, announce: o.announce, onChange: (t) => { syncAmpm(true); if (o.onChange) o.onChange(t); } });
+    let flip = null;
+    if (o.ampmFlip) {                                   // minute hand dragging crosses 12 by itself; this sets the half of the day
+      flip = createFlip(el('div', 'flips', host), {
+        label: 'AM or PM', caption: 'AM / PM', interactive: true, ampm: true, text: 'AM', step: 42, fling: 0,
+        onStep: () => { clock.set(mod(clock.get() + 720, 1440)); syncAmpm(true); if (o.onChange) o.onChange(clock.get()); },
+      });
+    }
+    let pm = false;
+    function syncAmpm(animate) {
+      if (!flip) return;
+      const now = parts(clock.get()).pm;
+      flip.set(now ? 'PM' : 'AM', animate && now !== pm ? (now ? 1 : -1) : 0);
+      pm = now;
+    }
+    return {
+      halfDay: true,
+      get: clock.get,
+      set(t) { clock.set(t); syncAmpm(false); },
+      showMinutes: clock.showMinutes,
+    };
+  }
+
+  function createDigital(host, o = {}) {
+    const live = !!o.interactive;
+    const box = el('div', 'flips' + (live ? '' : ' nolabels'), host);
+    let T = 0, shown = null;
+    const cap = (text, accent) => (live ? { caption: text, accent } : {});
+    function change(t) { T = t; paint(true); if (o.onChange) o.onChange(T); }
+    const fh = createFlip(box, Object.assign({
+      label: 'Hours', interactive: live, text: '12', step: 42, fling: 0.4,
+      // 12 h: 1..12 inside the current half of the day. 24 h: 0..23.
+      onStep: (d) => {
+        const p = parts(T);
+        change(o.carry || is24() ? mod(T + d * 60, 1440) : (p.pm ? 720 : 0) + (mod(p.h - 1 + d, 12) + 1) % 12 * 60 + p.m);
+      },
+    }, cap('hours', 'var(--hour)')));
+    box.insertAdjacentHTML('beforeend', '<span class="colon">:</span>');
+    const fm = createFlip(box, Object.assign({
+      label: 'Minutes', interactive: live, text: '00', step: 22,
+      onStep: (d) => change(o.carry ? mod(T + d, 1440) : T - T % 60 + mod(T % 60 + d, 60)),   // carry: like the minute hand
+    }, cap('minutes', 'var(--minute)')));
+    const fa = createFlip(box, Object.assign({
+      label: 'AM or PM', interactive: live, ampm: true, text: 'AM', step: 42, fling: 0,
+      onStep: () => change(mod(T + 720, 1440)),
+    }, cap('AM / PM')));
+    function paint(animate) {
+      const p = parts(T), q = shown && animate ? shown : null;
+      fh.set(pad(hourOf(p)), q ? dirOf(hourOf(q), hourOf(p), is24() ? 24 : 12) : 0);
+      fm.set(pad(p.m), q ? dirOf(q.m, p.m, 60) : 0);
+      fa.set(p.pm ? 'PM' : 'AM', q && q.pm !== p.pm ? (p.pm ? 1 : -1) : 0);
+      fa.unit.hidden = is24();                          // 24 h needs no AM/PM
+      shown = p;
+    }
+    settingListeners.push((key) => { if (key === 'format') { shown = null; paint(false); } });
+    paint(false);
+    return { halfDay: true, get: () => T, set(t, animate) { T = t; paint(!!animate); } };
+  }
+
+  function createWords(host, o = {}) {
+    const live = !!o.interactive;
+    const root = el('p', 'words', host);
+    const word = () => el('span', 'w', root);
+    const slot = (cls, name) => {
+      if (!live) return el('span', 'var ' + cls, root);
+      const s = el('select', 'var ' + cls, root);
+      s.addEventListener('change', pick);
+      s.dataset.name = name;
+      return s;
+    };
+    const n = {};
+    n.preB = word(); n.pre = slot('min', 'pre'); n.preA = word(); n.k = slot('part', 'k');
+    n.hour = slot('hr', 'hour'); n.noun = word(); n.ampm = slot('', 'ampm');
+    n.sufB = word(); n.suf = slot('min', 'suf'); n.sufA = word();
+    let T = 0, st = null;
+
+    // A <select> only rebuilds its options when their labels changed.
+    function fill(sel, labels, idx) {
+      const sig = labels.join('|');
+      if (sel.dataset.sig !== sig) {
+        sel.dataset.sig = sig;
+        sel.replaceChildren(...labels.map((t, i) => { const op = el('option'); op.value = i; op.textContent = t; return op; }));
+      }
+      sel.selectedIndex = idx;
+    }
+    function render() {
+      const L = LANGS[settings.lang];
+      root.lang = L.code;
+      const mins = () => Array.from({ length: 30 }, (_, i) => (i ? String(i) : '—'));
+      const put = (node, text, labels, idx, show) => {
+        if (live) { node.hidden = false; fill(node, labels, idx); node.setAttribute('aria-label', L.names[node.dataset.name]); }
+        else { node.hidden = !show; node.textContent = text; }
+      };
+      put(n.pre, st.pre, mins(), st.pre, st.pre > 0);
+      put(n.k, L.anchors[st.k], L.anchors, st.k, st.k > 0);
+      put(n.hour, L.hour(st.k, st.H - 1), Array.from({ length: 12 }, (_, i) => L.hour(st.k, i)), st.H - 1, true);
+      put(n.ampm, L.ampm[+st.pm], L.ampm, +st.pm, !is24());
+      put(n.suf, st.suf, mins(), st.suf, st.suf > 0);
+      if (live) n.ampm.hidden = is24();
+      // Editable: an empty "minutes to" / "and minutes" slot keeps its words, dimmed, so the lone dash has a context.
+      const text = (node, t, on) => { node.textContent = t; node.hidden = !t || !(on || live); node.classList.toggle('dim', !on); };
+      text(n.preB, L.preBefore(st.pre || 2), st.pre > 0); text(n.preA, L.preAfter(st.pre || 2), st.pre > 0);
+      text(n.noun, L.noun(st), true);
+      text(n.sufB, L.sufBefore(st.suf || 2), st.suf > 0); text(n.sufA, L.sufAfter(st.suf || 2), st.suf > 0);
+    }
+    function pick(e) {
+      const v = (x) => +x.value;
+      st = { pre: v(n.pre), k: v(n.k), H: v(n.hour) + 1, pm: v(n.ampm) === 1, suf: v(n.suf) };
+      // "N minutes to" and "and N minutes" exclude each other: the one just chosen wins.
+      if (e.target === n.pre && st.pre) st.suf = 0;
+      else if (e.target === n.suf && st.suf) st.pre = 0;
+      T = wordsToTime(LANGS[settings.lang], st);
+      render();
+      if (o.onChange) o.onChange(T);
+    }
+    function set(t) { T = t; st = wordsFromTime(LANGS[settings.lang], t); render(); }
+    settingListeners.push((key) => { if (key === 'format' || key === 'lang') set(T); });   // same moment, other words
+    set(0);
+    return { get halfDay() { return !is24(); }, get: () => T, set };
+  }
 
   /* ------------------------------------------------------------------ */
   /* Test room                                                           */
@@ -540,10 +766,15 @@
     } while (T === avoid);
     return T;
   }
-  function hint(hourOk, minOk, ampmOnly) {
-    if (ampmOnly) return is24() ? 'Almost! Morning or afternoon? Look at AM / PM.' : 'Almost! Look at AM / PM.';
-    if (hourOk) return 'The hour is right. Look at the long hand again!';
-    if (minOk) return 'The minutes are right. Look at the short hand again!';
+  function hint(kind, hourOk, minOk, ampmOnly) {
+    if (ampmOnly) return is24() ? 'Almost! Morning or afternoon?' : 'Almost! Look at AM / PM.';
+    if (kind === 'analog') {
+      if (hourOk) return 'The hour is right. Look at the long hand again!';
+      if (minOk) return 'The minutes are right. Look at the short hand again!';
+    } else {
+      if (hourOk) return 'The hour is right. Check the minutes!';
+      if (minOk) return 'The minutes are right. Check the hour!';
+    }
     return 'Not quite. Try again!';
   }
   function feedback(panel, msg, ok, text) {
@@ -555,151 +786,134 @@
   }
   function reset(panel, msg) { panel.classList.remove('ok', 'bad'); msg.className = 'msg'; msg.textContent = ''; }
   const PRAISE = ['Correct! Great job!', 'Yes! Well done!', 'Perfect!', 'You got it!', 'Super!'];
+  const KIND = {
+    analog: { title: 'Analog clock', noun: 'the analog clock' },
+    digital: { title: 'Digital clock', noun: 'the digital clock' },
+    words: { title: 'Written time', noun: 'the written time' },
+  };
+  const listOf = (a) => (a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]);
 
   function initTest() {
-    let level = settings.level;
-    const levelBtns = [...document.querySelectorAll('[data-level]')];
+    const S = { T: 0, shown: 'analog', answers: [], busy: false, score: 0 };
+    const qBox = $('#Q-boxes'), aBox = $('#A-boxes'), checks = $('#A-checks'), qType = $('#Q-type');
+    const Q = {}, A = {}, aSec = {}, qSec = {}, aChk = {};
 
-    /* --- left: read the analog clock, type the digital time --- */
-    const L = { T: 0, h: 12, m: 0, busy: false, score: 0 };
-    const lClock = createClock($('#L-clock'), { announce: false });
-    const lh = createFlip($('#L-flips'), {
-      label: 'Hours', caption: 'hours', accent: 'var(--hour)', interactive: true, text: '12', step: 42, fling: 0.4,
-      // 12 h: 1..12. 24 h: 0..23, so an afternoon time can be entered.
-      onStep: (d) => { L.h = is24() ? mod(L.h + d, 24) : mod(L.h - 1 + d, 12) + 1; lh.set(pad(L.h), d); },
+    checks.append('Answer with:');
+    KINDS.forEach((k) => {
+      qSec[k] = el('div', 'qv', qBox);
+      Q[k] = (k === 'analog' ? createAnalog : k === 'digital' ? createDigital : createWords)(qSec[k], { announce: false });
+
+      aSec[k] = el('section', 'ans', aBox);
+      el('h3', '', aSec[k]).textContent = KIND[k].title;
+      const mark = el('span', 'mark', aSec[k]);
+      mark.setAttribute('aria-hidden', 'true');
+      A[k] = (k === 'analog' ? createAnalog : k === 'digital' ? createDigital : createWords)(el('div', 'qv', aSec[k]), {
+        interactive: true, ampmFlip: true, announce: true,
+        onChange: () => { aSec[k].classList.remove('ok', 'bad'); mark.textContent = ''; },
+      });
+
+      const lab = el('label', 'toggle', checks);
+      aChk[k] = el('input', '', lab);
+      aChk[k].type = 'checkbox';
+      lab.append(KIND[k].title);
+      aChk[k].addEventListener('change', () => {
+        // At least one answer clock must stay.
+        if (!KINDS.some((t) => t !== S.shown && t !== k && aChk[t].checked)) aChk[k].checked = true;
+        settings.answers[k] = aChk[k].checked; saveSettings();
+        layout();
+      });
     });
-    $('#L-flips').insertAdjacentHTML('beforeend', '<span class="colon">:</span>');
-    const lm = createFlip($('#L-flips'), {
-      label: 'Minutes', caption: 'minutes', accent: 'var(--minute)', interactive: true, text: '00', step: 22,
-      onStep: (d) => { L.m = mod(L.m + d, 60); lm.set(pad(L.m), d); },
-    });
-    // The time the answer must equal, in the units of the hour wheel.
-    const leftTarget = () => { const p = parts(L.T); return { h: hourOf(p), m: p.m }; };
-    function resetLeftAnswer() {
-      const t = leftTarget();
-      L.h = t.h === 12 && t.m === 0 ? 6 : 12; L.m = 0;     // never start on the right answer
-      lh.set(pad(L.h)); lm.set(pad(L.m));
-      reset($('#left'), $('#L-msg'));
+
+    function layout() {
+      const random = settings.question === 'random';
+      const others = KINDS.filter((k) => k !== S.shown);
+      S.answers = random ? others : others.filter((k) => settings.answers[k]);
+      if (!S.answers.length) { S.answers = others; others.forEach((k) => { settings.answers[k] = true; }); }
+      KINDS.forEach((k) => {
+        qSec[k].hidden = k !== S.shown;
+        aSec[k].hidden = !S.answers.includes(k);
+        aChk[k].checked = settings.answers[k];
+        aChk[k].parentElement.hidden = k === S.shown;
+      });
+      checks.hidden = random;
+      qType.value = settings.question;
+      $('#Q-sub').textContent = (random ? 'A random clock is shown. ' : '') + 'Set ' + listOf(S.answers.map((k) => KIND[k].noun)) + ' to the same time.';
+      $('#Q-sub').lang = 'en';
     }
-    function newLeft() {
-      L.busy = false;
-      L.T = randomTime(level, L.T);
-      lClock.set(L.T);
-      resetLeftAnswer();
+    function newRound() {
+      S.busy = false;
+      S.T = randomTime(settings.level, S.T);
+      S.shown = settings.question === 'random' ? KINDS[rand(3)] : settings.question;
+      layout();
+      const start = S.T % 720 === 0 ? 360 : 0;           // never start on the right answer
+      KINDS.forEach((k) => {
+        Q[k].set(S.T); A[k].set(start);
+        aSec[k].classList.remove('ok', 'bad'); aSec[k].querySelector('.mark').textContent = '';
+      });
+      reset($('#apanel'), $('#T-msg'));
     }
-    $('#L-check').addEventListener('click', () => {
-      if (L.busy) return;
-      const t = leftTarget();
-      if (L.h === t.h && L.m === t.m) {
-        L.busy = true; $('#L-score').textContent = ++L.score;
-        feedback($('#left'), $('#L-msg'), true, PRAISE[rand(PRAISE.length)]);
-        setTimeout(newLeft, 1500);
+
+    $('#T-check').addEventListener('click', () => {
+      if (S.busy) return;
+      const bad = [];
+      S.answers.forEach((k) => {
+        // Words without AM/PM (24 h mode) cannot tell the half of the day: compare the 12 h position then.
+        const exact = Q[S.shown].halfDay && A[k].halfDay, got = A[k].get();
+        const ok = exact ? got === S.T : got % 720 === S.T % 720;
+        aSec[k].classList.remove('ok', 'bad'); aSec[k].classList.add(ok ? 'ok' : 'bad');
+        aSec[k].querySelector('.mark').textContent = ok ? '✓' : '✗';
+        if (!ok) bad.push({ k, got, exact });
+      });
+      if (!bad.length) {
+        S.busy = true; $('#T-score').textContent = ++S.score;
+        feedback($('#apanel'), $('#T-msg'), true, PRAISE[rand(PRAISE.length)]);
+        setTimeout(newRound, 1500);
+      } else if (bad.length === 1) {
+        const a = parts(bad[0].got), t = parts(S.T);
+        const text = hint(bad[0].k, a.h === t.h, a.m === t.m, a.h === t.h && a.m === t.m);
+        feedback($('#apanel'), $('#T-msg'), false, (S.answers.length > 1 ? KIND[bad[0].k].title + ': ' : '') + text);
       } else {
-        // 24 h only: right minutes and the right hour on the wrong half of the day (e.g. 3 instead of 15)
-        const halfDay = is24() && L.m === t.m && L.h !== t.h && L.h % 12 === t.h % 12;
-        feedback($('#left'), $('#L-msg'), false, hint(L.h === t.h, L.m === t.m, halfDay));
+        feedback($('#apanel'), $('#T-msg'), false, 'Not quite. Check ' + listOf(bad.map((b) => KIND[b.k].noun)) + '.');
       }
     });
-    $('#L-new').addEventListener('click', () => { if (!L.busy) newLeft(); });
-
-    /* --- right: read the digital time, set the analog clock --- */
-    const R = { T: 0, busy: false, score: 0, pm: false };
-    const tgtBox = $('#R-target');
-    const th = createFlip(tgtBox, { label: 'Hours', small: true, text: '12' });
-    tgtBox.insertAdjacentHTML('beforeend', '<span class="colon">:</span>');
-    const tm = createFlip(tgtBox, { label: 'Minutes', small: true, text: '00' });
-    const tp = createFlip(tgtBox, { label: 'AM or PM', small: true, ampm: true, text: 'AM' });
-    const rap = createFlip($('#R-flips'), {
-      label: 'AM or PM', caption: 'AM / PM', interactive: true, ampm: true, text: 'AM', step: 42, fling: 0,
-      onStep: () => { rClock.set(mod(rClock.get() + 720, 1440)); syncAmpm(true); },
-    });
-    const rClock = createClock($('#R-clock'), { interactive: true, onChange: () => syncAmpm(true) });
-    function syncAmpm(animate) {
-      const pm = parts(rClock.get()).pm;
-      rap.set(pm ? 'PM' : 'AM', animate && pm !== R.pm ? (pm ? 1 : -1) : 0);
-      R.pm = pm;
-    }
-    function newRight() {
-      R.busy = false;
-      R.T = randomTime(level, R.T);
-      renderTarget();
-      rClock.set(R.T === 0 ? 360 : 0);
-      syncAmpm(false);
-      reset($('#right'), $('#R-msg'));
-    }
-    function renderTarget() {
-      const p = parts(R.T);
-      th.set(pad(hourOf(p))); tm.set(pad(p.m)); tp.set(p.pm ? 'PM' : 'AM');
-      tp.unit.hidden = is24();                              // 24 h needs no AM/PM on the digital time
-    }
-    $('#R-check').addEventListener('click', () => {
-      if (R.busy) return;
-      if (rClock.get() === R.T) {
-        R.busy = true; $('#R-score').textContent = ++R.score;
-        feedback($('#right'), $('#R-msg'), true, PRAISE[rand(PRAISE.length)]);
-        setTimeout(newRight, 1500);
-      } else {
-        const a = parts(rClock.get()), t = parts(R.T);
-        feedback($('#right'), $('#R-msg'), false, hint(a.h === t.h, a.m === t.m, a.h === t.h && a.m === t.m));
-      }
-    });
-    $('#R-new').addEventListener('click', () => { if (!R.busy) newRight(); });
+    $('#T-new').addEventListener('click', () => { if (!S.busy) newRound(); });
+    qType.addEventListener('change', () => { settings.question = qType.value; saveSettings(); newRound(); });
 
     /* --- difficulty --- */
+    const levelBtns = [...document.querySelectorAll('[data-level]')];
     function setLevel(l, persist) {
-      level = l;
+      settings.level = l;
       levelBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.level === l)));
-      if (persist) { settings.level = l; saveSettings(); }
-      newLeft(); newRight();
+      if (persist) saveSettings();
+      newRound();
     }
     levelBtns.forEach((b) => b.addEventListener('click', () => setLevel(b.dataset.level, true)));
-    setLevel(level, false);
-
-    // Switching 12 h <-> 24 h keeps the current question, only the digital side changes.
-    fmtListeners.push(() => {
-      renderTarget();
-      if (!L.busy) resetLeftAnswer();
-    });
+    setLevel(settings.level, false);
   }
 
   /* ------------------------------------------------------------------ */
-  /* Learn tab: one analog clock and one flip clock sharing one time     */
+  /* Learn tab: analog clock, flip numbers and words, all one time       */
   /* ------------------------------------------------------------------ */
   function initLearn() {
     const now = new Date();
     let T = now.getHours() * 60 + now.getMinutes();
-    let shown = parts(T);
-    const clock = createClock($('#N-clock'), { interactive: true, onChange: (t) => { T = t; sync(); } });
-    const box = $('#N-flips');
-    const fh = createFlip(box, {
-      label: 'Hours', caption: 'hours', accent: 'var(--hour)', interactive: true, text: pad(hourOf(shown)), step: 42, fling: 0.4,
-      onStep: (d) => { T = mod(T + d * 60, 1440); clock.set(T); sync(); },
-    });
-    box.insertAdjacentHTML('beforeend', '<span class="colon">:</span>');
-    const fm = createFlip(box, {
-      label: 'Minutes', caption: 'minutes', accent: 'var(--minute)', interactive: true, text: pad(shown.m), step: 22,
-      onStep: (d) => { T = mod(T + d, 1440); clock.set(T); sync(); },   // carries into the hour, like the minute hand
-    });
-    const fa = createFlip(box, {
-      label: 'AM or PM', caption: 'AM / PM', interactive: true, ampm: true, text: shown.pm ? 'PM' : 'AM', step: 42, fling: 0,
-      onStep: () => { T = mod(T + 720, 1440); clock.set(T); sync(); },
-    });
-    function sync() {
-      const p = parts(T);
-      fh.set(pad(hourOf(p)), dirOf(hourOf(shown), hourOf(p), is24() ? 24 : 12));
-      fm.set(pad(p.m), dirOf(shown.m, p.m, 60));
-      fa.set(p.pm ? 'PM' : 'AM', p.pm === shown.pm ? 0 : p.pm ? 1 : -1);
-      shown = p;
-    }
-    fmtListeners.push(() => {
-      shown = parts(T);
-      fh.set(pad(hourOf(shown)));
-      fa.unit.hidden = is24();
-    });
-    fa.unit.hidden = is24();
-    clock.set(T);
-    clock.showMinutes(true);
-    $('#N-min').addEventListener('change', (e) => clock.showMinutes(e.target.checked));
+    const V = {};
+    // Whatever was just changed tells the others; the words keep their own wording until something else changes the time.
+    const follow = (source) => (t) => { T = t; Object.keys(V).forEach((k) => { if (k !== source) V[k].set(T, true); }); };
+    V.analog = createAnalog($('#N-clock'), { interactive: true, onChange: follow('analog') });
+    V.digital = createDigital($('#N-flips'), { interactive: true, carry: true, onChange: follow('digital') });
+    V.words = createWords($('#N-words'), { interactive: true, onChange: follow('words') });
+    Object.keys(V).forEach((k) => V[k].set(T));
+    V.analog.showMinutes(true);
+    $('#N-min').addEventListener('change', (e) => V.analog.showMinutes(e.target.checked));
+    const hintEl = $('#N-hint');
+    const hints = {
+      en: 'Pick the words from the lists. “X minutes to” and “and X minutes” are optional.',
+      cs: 'Vyber slova ze seznamů. „Za X minut“ a „a X minut“ jsou volitelné.',
+    };
+    const paintHint = () => { hintEl.textContent = hints[settings.lang]; hintEl.lang = settings.lang; };
+    settingListeners.push((key) => { if (key === 'lang') paintHint(); });
+    paintHint();
   }
 
   /* ------------------------------------------------------------------ */
@@ -713,7 +927,6 @@
   $('#tab-test').addEventListener('click', () => showTab('test'));
   $('#tab-learn').addEventListener('click', () => showTab('learn'));
 
-  fmtBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.fmt === fmt)));
   const gear = $('#settings-btn'), menu = $('#settings-menu');
   function toggleMenu(open) {
     menu.hidden = !open;
