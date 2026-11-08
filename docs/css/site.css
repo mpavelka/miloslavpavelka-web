@@ -113,6 +113,13 @@ a:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-r
 .badge { display: block; flex: none; }
 .badge img { display: block; width: 92px; height: 92px; }
 
+/* The badge image is transparent and made for light backgrounds. In dark mode it gets a light plate
+   instead of a colour filter, so the issuer's artwork keeps its real colours. The plate is drawn with
+   box-shadow so it does not change the layout. */
+@media (prefers-color-scheme: dark) {
+  .badge img { background: #fff; border-radius: 10px; box-shadow: 0 0 0 6px #fff; }
+}
+
 h1 { margin: 0; font-size: 2.5rem; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
 
 .headline { margin: 8px 0 0; font-size: 1.25rem; font-weight: 500; color: var(--accent); }
