@@ -109,6 +109,10 @@ a:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-r
   box-shadow: 0 0 0 6px var(--accent-soft);
 }
 
+.title-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px 20px; }
+.badge { display: block; flex: none; }
+.badge img { display: block; width: 92px; height: 92px; }
+
 h1 { margin: 0; font-size: 2.5rem; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
 
 .headline { margin: 8px 0 0; font-size: 1.25rem; font-weight: 500; color: var(--accent); }
@@ -173,6 +177,7 @@ footer { border-top: 1px solid var(--rule); padding: 22px 0 40px; font-size: 0.8
   body { font-size: 16px; }
   .hero { grid-template-columns: 1fr; gap: 22px; padding: 36px 0 28px; }
   .portrait { width: 120px; height: 120px; }
+  .badge img { width: 72px; height: 72px; }
   h1 { font-size: 2.1rem; }
   .skills { grid-template-columns: 1fr; gap: 2px; }
   .skills dd { margin-bottom: 12px; }
