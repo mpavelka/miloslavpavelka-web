@@ -9,7 +9,9 @@ The www files are located in the `docs/` folder for smooth compatibility with Gi
 
 ## Structure
 
-- `docs/index.html` and `docs/css/site.css`: the "About me" page with a sidebar. Plain HTML and CSS, no build step, no JavaScript.
+- `docs/index.html` and `docs/css/site.css`: the "About me" page with a sidebar. Plain HTML and CSS, no build step.
+- `docs/js/theme.js`: the only script, a dark-mode switch at the bottom of the sidebar. The choice is kept in
+  `localStorage`; without JavaScript the page follows the system setting.
 - `docs/cv/`: public copy of the CV (`index.html`, `miloslav-pavelka-cv.pdf`). It is a snapshot of
   `cv/cv.html` from the `job-hunt-workspace` repo with the phone number removed and `noindex` set.
   Refresh both files there whenever the CV changes.
