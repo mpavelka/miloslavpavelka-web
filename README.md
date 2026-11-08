@@ -1,27 +1,25 @@
 Personal Landing Page (miloslavpavelka.com)
 ===
 
-This is a personal landing page. You can find it at [https://miloslavpavelka.com](https://miloslavpavelka.com).
+A short self-presentation for the job search: who I am, what I have built, the CV, and how to get in touch.
+You can find it at [https://miloslavpavelka.com](https://miloslavpavelka.com).
 
 The www files are located in the `docs/` folder for smooth compatibility with GitHub Pages.
 
-It is built on top of a free CSS template [PROFILE by FreeHTML5](https://www.free-css.com/free-css-templates/page242/profile) distributed under a Creative Commons license.
+## Structure
+
+- `docs/index.html` and `docs/css/site.css`: the homepage. Plain HTML and CSS, no build step, no JavaScript.
+- `docs/cv/`: public copy of the CV (`index.html`, `miloslav-pavelka-cv.pdf`). It is a snapshot of
+  `cv/cv.html` from the `job-hunt-workspace` repo with the phone number removed and `noindex` set.
+  Refresh both files there whenever the CV changes.
+- `docs/images/og-card.png`: 1200×630 preview used when the link is pasted into LinkedIn, Slack or email.
+- `docs/totp-qr/` and `docs/clock-trainer/`: small stand-alone tools, linked from the footer.
 
 ## Develop
 
-### SASS
+Serve `docs/` from its root (the pages use root-relative paths):
 
-#### Install
-
-Mac:
-
-	# port install sassc
-
-#### Run
-
-Mac:
-
-	$ sassc --style expanded -m ./sass/style.scss ./docs/css/style.css
+	$ python3 -m http.server 8000 --directory docs
 
 ## Deploy
 
