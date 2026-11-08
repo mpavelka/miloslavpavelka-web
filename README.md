@@ -14,7 +14,7 @@ The www files are located in the `docs/` folder for smooth compatibility with Gi
   `cv/cv.html` from the `job-hunt-workspace` repo with the phone number removed and `noindex` set.
   Refresh both files there whenever the CV changes.
 - `docs/images/og-card.png`: 1200×630 preview used when the link is pasted into LinkedIn, Slack or email.
-- `docs/totp-qr/` and `docs/clock-trainer/`: tools I made. They are listed under "Tools" in the sidebar (planet icon, opened in a new tab). To add a tool, add a list item there.
+- `docs/totp-qr/` and `docs/clock-trainer/`: tools I made. They are listed under "Tools" in the sidebar (marked with ↗, opened in a new tab). To add a tool, add a list item there.
 
 ## Develop
 
